@@ -1,7 +1,10 @@
+import { getToken } from "./auth";
+
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 export const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+
 
 export type Mahasiswa = {
   id: number;
@@ -84,8 +87,12 @@ export async function getMahasiswa(params: GetMahasiswaParams): Promise<Paginate
   if (params.page) query.set("page", String(params.page));
   if (params.limit) query.set("limit", String(params.limit));
 
+  const token = getToken();
   const response = await fetch(`${API_URL}/mahasiswa?${query.toString()}`, {
     cache: "no-store",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
   });
   
   const result = await response.json();
@@ -96,8 +103,12 @@ export async function getMahasiswa(params: GetMahasiswaParams): Promise<Paginate
 }
 
 export async function createMahasiswa(formData: FormData): Promise<any> {
+  const token = getToken();
   const response = await fetch(`${API_URL}/mahasiswa`, {
     method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
     body: formData,
   });
   const result = await response.json();
@@ -108,8 +119,12 @@ export async function createMahasiswa(formData: FormData): Promise<any> {
 }
 
 export async function updateMahasiswa(id: number, formData: FormData): Promise<any> {
+  const token = getToken();
   const response = await fetch(`${API_URL}/mahasiswa/${id}`, {
     method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
     body: formData,
   });
   const result = await response.json();
@@ -120,8 +135,12 @@ export async function updateMahasiswa(id: number, formData: FormData): Promise<a
 }
 
 export async function deleteMahasiswa(id: number): Promise<void> {
+  const token = getToken();
   const response = await fetch(`${API_URL}/mahasiswa/${id}`, {
     method: "DELETE",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
   });
   const result = await response.json();
   if (!response.ok) {

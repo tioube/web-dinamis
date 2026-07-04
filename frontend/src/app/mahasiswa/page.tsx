@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getToken, getUser, logout } from "@/lib/auth";
 import MahasiswaForm from "@/components/MahasiswaForm";
 import MahasiswaTable from "@/components/MahasiswaTable";
 import {
@@ -18,6 +19,10 @@ export default function MahasiswaPage() {
   const [mahasiswa, setMahasiswa] = useState<Mahasiswa[]>([]);
   const [prodiList, setProdiList] = useState<Prodi[]>([]);
   
+  // State Autentikasi
+  const [user, setUser] = useState<any>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   // State Search & Filter
   const [search, setSearch] = useState("");
   const [prodiId, setProdiId] = useState("");
@@ -64,14 +69,25 @@ export default function MahasiswaPage() {
     }
   };
 
-  // Load prodi sekali saja saat inisialisasi
+  // Pemeriksaan Autentikasi & Inisialisasi Prodi
   useEffect(() => {
-    loadProdi();
+    const token = getToken();
+    const currentUser = getUser();
+    if (!token) {
+      window.location.href = "/login";
+    } else {
+      setUser(currentUser);
+      setIsAuthLoading(false);
+      loadProdi();
+    }
   }, []);
 
   // Fetch ulang mahasiswa setiap kali halaman berubah
   useEffect(() => {
-    loadMahasiswa();
+    const token = getToken();
+    if (token) {
+      loadMahasiswa();
+    }
   }, [page]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -125,12 +141,18 @@ export default function MahasiswaPage() {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+  };
+
+  if (isAuthLoading) return <p>Loading...</p>;
+
   return (
     <main className="container">
       <div className="header">
         <div>
           <h1>CRUD Data Mahasiswa</h1>
-          <p>Frontend Next.js yang terhubung ke backend Express.js.</p>
+          <p>Halo, {user?.name || "User"} | <button onClick={handleLogout} style={{background: 'none', border: 'none', color: 'red', cursor: 'pointer', textDecoration: 'underline'}}>Logout</button></p>
         </div>
 
         <Link href="/">
