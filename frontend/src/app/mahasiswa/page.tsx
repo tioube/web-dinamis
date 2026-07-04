@@ -8,25 +8,55 @@ import {
   createMahasiswa,
   deleteMahasiswa,
   getMahasiswa,
+  getProdi,
   Mahasiswa,
-  MahasiswaInput,
+  Prodi,
   updateMahasiswa,
 } from "@/lib/api";
 
 export default function MahasiswaPage() {
   const [mahasiswa, setMahasiswa] = useState<Mahasiswa[]>([]);
+  const [prodiList, setProdiList] = useState<Prodi[]>([]);
+  
+  // State Search & Filter
   const [search, setSearch] = useState("");
+  const [prodiId, setProdiId] = useState("");
+  
+  // State Pagination
+  const [page, setPage] = useState(1);
+  const [limit] = useState(5); // Batas 5 item per halaman
+  const [totalPage, setTotalPage] = useState(1);
+  
   const [selectedMahasiswa, setSelectedMahasiswa] = useState<Mahasiswa | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  // Ambil list prodi untuk form & dropdown filter
+  const loadProdi = async () => {
+    try {
+      const data = await getProdi();
+      setProdiList(data);
+    } catch (err) {
+      console.error("Gagal memuat prodi:", err);
+    }
+  };
+
+  // Ambil data mahasiswa dengan filter, search, & pagination dari Server
   const loadMahasiswa = async () => {
     try {
       setLoading(true);
       setError("");
-      const data = await getMahasiswa();
-      setMahasiswa(data);
+      
+      const response = await getMahasiswa({
+        search,
+        prodi_id: prodiId,
+        page,
+        limit,
+      });
+      
+      setMahasiswa(response.data);
+      setTotalPage(response.meta.totalPage);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Gagal mengambil data mahasiswa");
     } finally {
@@ -34,20 +64,42 @@ export default function MahasiswaPage() {
     }
   };
 
+  // Load prodi sekali saja saat inisialisasi
   useEffect(() => {
-    loadMahasiswa();
+    loadProdi();
   }, []);
 
-  const handleSubmit = async (payload: MahasiswaInput) => {
+  // Fetch ulang mahasiswa setiap kali halaman berubah
+  useEffect(() => {
+    loadMahasiswa();
+  }, [page]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1); // Reset ke halaman pertama saat melakukan search
+    loadMahasiswa();
+  };
+
+  const handleResetFilter = () => {
+    setSearch("");
+    setProdiId("");
+    setPage(1);
+    // Jalankan load manual setelah state direset (useEffect state reset akan dieksekusi secara asinkronus)
+    setTimeout(() => {
+      loadMahasiswa();
+    }, 50);
+  };
+
+  const handleSubmit = async (formData: FormData) => {
     try {
       setMessage("");
       setError("");
 
       if (selectedMahasiswa) {
-        await updateMahasiswa(selectedMahasiswa.id, payload);
+        await updateMahasiswa(selectedMahasiswa.id, formData);
         setMessage("Data mahasiswa berhasil diperbarui");
       } else {
-        await createMahasiswa(payload);
+        await createMahasiswa(formData);
         setMessage("Data mahasiswa berhasil ditambahkan");
       }
 
@@ -73,12 +125,6 @@ export default function MahasiswaPage() {
     }
   };
 
-  // Tugas 3: Pencarian Data
-  const filteredMahasiswa = mahasiswa.filter((m) =>
-    m.nama.toLowerCase().includes(search.toLowerCase()) || 
-    m.nim.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <main className="container">
       <div className="header">
@@ -97,29 +143,68 @@ export default function MahasiswaPage() {
 
       <MahasiswaForm
         selectedMahasiswa={selectedMahasiswa}
+        prodiList={prodiList}
         onSubmit={handleSubmit}
         onCancelEdit={() => setSelectedMahasiswa(null)}
       />
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="header" style={{ marginBottom: 12 }}>
+        <div style={{ marginBottom: 16 }}>
           <h2>Daftar Mahasiswa</h2>
-          <input 
-            type="text" 
-            placeholder="Cari nama atau nim..." 
-            value={search} 
-            onChange={(e) => setSearch(e.target.value)} 
-          />
+          
+          {/* Form Pencarian & Filter */}
+          <form onSubmit={handleSearch} style={{ display: "flex", gap: "10px", marginTop: "10px", flexWrap: "wrap" }}>
+            <input 
+              type="text" 
+              placeholder="Cari nama atau nim..." 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              style={{ flex: 1, minWidth: "200px" }}
+            />
+            
+            <select value={prodiId} onChange={(e) => setProdiId(e.target.value)} style={{ padding: "8px", borderRadius: "4px" }}>
+              <option value="">Semua Program Studi</option>
+              {prodiList.map((p) => (
+                <option key={p.id} value={p.id}>{p.nama_prodi}</option>
+              ))}
+            </select>
+            
+            <button type="submit" className="btn-primary">Cari</button>
+            <button type="button" className="btn-secondary" onClick={handleResetFilter}>Reset</button>
+          </form>
         </div>
         
         {loading ? (
           <p>Memuat data...</p>
         ) : (
-          <MahasiswaTable
-            mahasiswa={filteredMahasiswa}
-            onEdit={setSelectedMahasiswa}
-            onDelete={handleDelete}
-          />
+          <>
+            <MahasiswaTable
+              mahasiswa={mahasiswa}
+              onEdit={setSelectedMahasiswa}
+              onDelete={handleDelete}
+            />
+
+            {/* Pagination Controls */}
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "15px", marginTop: "20px" }}>
+              <button 
+                className="btn-secondary"
+                disabled={page <= 1} 
+                onClick={() => setPage(page - 1)}
+              >
+                Sebelumnya
+              </button>
+              
+              <span>Halaman <strong>{page}</strong> dari <strong>{totalPage}</strong></span>
+              
+              <button 
+                className="btn-secondary"
+                disabled={page >= totalPage} 
+                onClick={() => setPage(page + 1)}
+              >
+                Selanjutnya
+              </button>
+            </div>
+          </>
         )}
       </section>
     </main>

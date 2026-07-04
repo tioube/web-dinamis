@@ -1,0 +1,43 @@
+CREATE DATABASE IF NOT EXISTS webdinamis;
+
+USE webdinamis;
+
+CREATE TABLE IF NOT EXISTS prodi (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nama_prodi VARCHAR(100) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+DROP TABLE IF EXISTS mahasiswa;
+
+CREATE TABLE mahasiswa (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nim VARCHAR(20) NOT NULL UNIQUE,
+  nama VARCHAR(100) NOT NULL,
+  prodi_id INT NOT NULL,
+  angkatan INT NOT NULL,
+  foto VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_mahasiswa_prodi
+    FOREIGN KEY (prodi_id) REFERENCES prodi(id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS produk (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(255) NOT NULL,
+  harga INT,
+  stok INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed data prodi
+INSERT IGNORE INTO prodi (id, nama_prodi) VALUES
+(1, 'Informatika'),
+(2, 'Sistem Informasi'),
+(3, 'Teknik Elektro'),
+(4, 'Manajemen'),
+(5, 'Akuntansi');
+

@@ -54,11 +54,12 @@ label {
   font-weight: 600;
 }
 
-input {
+input, select {
   border: 1px solid #d1d5db;
   border-radius: 8px;
   padding: 10px 12px;
   font-size: 14px;
+  background-color: white;
 }
 
 button {
